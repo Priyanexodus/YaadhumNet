@@ -1,0 +1,15 @@
+# Dockerfile.client
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.client.txt .
+RUN pip install --no-cache-dir -r requirements.client.txt
+COPY moon_fl/ ./moon_fl/
+COPY pyproject.toml .
+
+ENV SUPERLINK_URL=localhost:9091
+ENV DATA_PATH=./data
+
+CMD flwr-supernode \
+    --insecure \
+    --superlink $SUPERLINK_URL \
+    --node-config "data-path=$DATA_PATH"

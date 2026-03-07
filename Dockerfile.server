@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.server.txt .
+RUN pip install --no-cache-dir -r requirements.server.txt
+COPY moon_fl/ ./moon_fl/
+COPY pyproject.toml .
+# SuperLink listens on 9091 (gRPC) and 9093 (REST)
+EXPOSE 9091 9093
+# Use --ssl-certfile and --ssl-keyfile in production
+CMD ["flwr-superlink", "--insecure"]
