@@ -1,23 +1,12 @@
-FROM python:3.11-slim
+FROM ghcr.io/astral-sh/uv:python3.11-slim
 
 WORKDIR /app
 
-# Install build deps + uv
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    python3-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -Ls https://astral.sh/uv/install.sh | sh
-
-ENV PATH="/root/.local/bin:$PATH"
-
-COPY requirements.server.txt .
-RUN uv pip install --system --no-cache -r requirements.server.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --extra server --no-cache
 
 COPY moon_fl/ ./moon_fl/
-COPY pyproject.toml .
+RUN uv sync --frozen --extra server --no-cache
 
 EXPOSE 9091 9093
 

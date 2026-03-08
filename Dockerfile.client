@@ -1,20 +1,20 @@
-# Dockerfile.client
 FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    curl \
+RUN apt-get update && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/* \
     && curl -Ls https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.local/bin:$PATH"
 
-COPY requirements.client.txt .
-RUN uv pip install --system --no-cache -r requirements.client.txt
+# Layer cache — only re-runs when pyproject.toml or uv.lock changes
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --extra client --no-cache
 
+# Now copy source and install project
 COPY moon_fl/ ./moon_fl/
-COPY pyproject.toml .
+RUN uv sync --frozen --extra client --no-cache
 
 ENV SUPERLINK_URL=localhost:9091
 ENV DATA_PATH=./data
