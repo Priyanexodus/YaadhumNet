@@ -1,8 +1,18 @@
 # Dockerfile.client
-FROM python:3.11-slim
+FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
+
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -Ls https://astral.sh/uv/install.sh | sh
+
+ENV PATH="/root/.local/bin:$PATH"
+
 COPY requirements.client.txt .
-RUN pip install --no-cache-dir -r requirements.client.txt
+RUN uv pip install --system --no-cache -r requirements.client.txt
+
 COPY moon_fl/ ./moon_fl/
 COPY pyproject.toml .
 
