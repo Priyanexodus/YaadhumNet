@@ -1,18 +1,16 @@
 # Dockerfile.client.cpu
-FROM ghcr.io/astral-sh/uv:python3.11-slim
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 WORKDIR /app
-
-COPY pyproject.toml uv.lock ./
+ENV UV_PYTHON_PREFERENCE=only-system
+COPY .python-version pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --extra client --extra cpu --no-cache
 
 COPY moon_fl/ ./moon_fl/
 RUN uv sync --frozen --extra client --extra cpu --no-cache
 
+ENV PATH="/app/.venv/bin:$PATH"
 ENV SUPERLINK_URL=localhost:9091
 ENV DATA_PATH=./data
 
-CMD flwr-supernode \
-    --insecure \
-    --superlink $SUPERLINK_URL \
-    --node-config "data-path=$DATA_PATH"
+CMD ["sh", "-c", "flower-supernode --insecure --superlink $SUPERLINK_URL --node-config 'data-path=\"$DATA_PATH\"'"]

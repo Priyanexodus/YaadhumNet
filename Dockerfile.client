@@ -7,19 +7,16 @@ RUN apt-get update && apt-get install -y curl \
     && curl -Ls https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.local/bin:$PATH"
+ENV UV_PYTHON_PREFERENCE=only-system
 
-# Layer cache — only re-runs when pyproject.toml or uv.lock changes
-COPY pyproject.toml uv.lock ./
+COPY .python-version pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --extra client --no-cache
 
-# Now copy source and install project
 COPY moon_fl/ ./moon_fl/
 RUN uv sync --frozen --extra client --no-cache
 
+ENV PATH="/app/.venv/bin:$PATH"
 ENV SUPERLINK_URL=localhost:9091
 ENV DATA_PATH=./data
 
-CMD flwr-supernode \
-    --insecure \
-    --superlink $SUPERLINK_URL \
-    --node-config "data-path=$DATA_PATH"
+CMD ["sh", "-c", "flower-supernode --insecure --superlink $SUPERLINK_URL --node-config 'data-path=\"$DATA_PATH\"'"]

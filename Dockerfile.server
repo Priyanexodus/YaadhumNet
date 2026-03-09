@@ -1,13 +1,15 @@
-FROM ghcr.io/astral-sh/uv:python3.11-slim
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
+COPY .python-version pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --extra server --no-cache
 
 COPY moon_fl/ ./moon_fl/
 RUN uv sync --frozen --extra server --no-cache
 
-EXPOSE 9091 9093
+ENV PATH="/app/.venv/bin:$PATH"
 
-CMD ["flwr-superlink", "--insecure"]
+EXPOSE 9091 9092
+
+CMD ["flower-superlink", "--insecure"]
