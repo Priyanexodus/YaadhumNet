@@ -2,7 +2,9 @@ from flwr.server import ServerApp, ServerConfig, ServerAppComponents
 from flwr.server.strategy import FedAvg
 from flwr.common import Context
 import mlflow
+import os
 
+NUM_ROUNDS = 3  # TODO: change to 20 for production
 
 # ── Metric aggregation ───────────────────────────────────────────
 def weighted_average(metrics):
@@ -20,17 +22,16 @@ def weighted_train_average(metrics):
 # ── Auto-scaling strategy with MLflow logging ────────────────────
 class AutoScaleMOONStrategy(FedAvg):
 
+    def __init__(self, num_rounds, **kwargs):
+        super().__init__(**kwargs)
+        self.num_rounds = num_rounds
+
     def configure_fit(self, server_round, parameters, client_manager):
         num_clients = client_manager.num_available()
-
-        # Update thresholds dynamically
-        self.min_fit_clients      = num_clients
-        self.min_evaluate_clients = num_clients
+        self.min_fit_clients       = num_clients
+        self.min_evaluate_clients  = num_clients
         self.min_available_clients = num_clients
-
-        # Closure — injects client_manager into fit_config
-        self.on_fit_config_fn = self._make_fit_config(client_manager)
-
+        self.on_fit_config_fn      = self._make_fit_config(client_manager)
         print(f"Round {server_round}: {num_clients} clients detected")
         return super().configure_fit(server_round, parameters, client_manager)
 
@@ -40,12 +41,10 @@ class AutoScaleMOONStrategy(FedAvg):
         return super().configure_evaluate(server_round, parameters, client_manager)
 
     def _make_fit_config(self, client_manager):
-        """Returns a fit_config function with client_manager baked in."""
         def fit_config(server_round):
             return {
                 "local_epochs": 5,
                 "round":        server_round,
-                # num_partitions removed — no Dirichlet partitioning ✅
                 "mu":           5,
                 "temperature":  0.5,
             }
@@ -72,28 +71,42 @@ class AutoScaleMOONStrategy(FedAvg):
                 "eval_loss":     loss,
             }, step=server_round)
             print(f"Round {server_round} | eval_accuracy: {metrics.get('accuracy', 0):.4f} | eval_loss: {loss:.4f}")
+
+        # Close MLflow run cleanly on final round
+        if server_round == self.num_rounds:
+            mlflow.end_run()
+            print("MLflow run closed.")
+
         return loss, metrics
 
 
 # ── Server entry point ───────────────────────────────────────────
 def server_fn(context: Context):
-    mlflow.set_tracking_uri("http://<EC2-PUBLIC-IP>:5000")   # ← replace before deploying
     mlflow.set_experiment("MOON-FL-Production")
     mlflow.start_run()
 
+    mlflow.log_params({
+        "num_rounds":    NUM_ROUNDS,
+        "local_epochs":  5,
+        "mu":            5,
+        "temperature":   0.5,
+        "min_available_clients": 2,
+    })
+
     strategy = AutoScaleMOONStrategy(
+        num_rounds=NUM_ROUNDS,
         fraction_fit=1.0,
         fraction_evaluate=1.0,
         min_fit_clients=1,
         min_evaluate_clients=1,
-        min_available_clients=2,        # wait for at least 2 clients
+        min_available_clients=2,
         fit_metrics_aggregation_fn=weighted_train_average,
         evaluate_metrics_aggregation_fn=weighted_average,
     )
 
-    return ServerAppComponents(         # fix: tuple → ServerAppComponents
+    return ServerAppComponents(
         strategy=strategy,
-        config=ServerConfig(num_rounds=20),
+        config=ServerConfig(num_rounds=NUM_ROUNDS),
     )
 
 app = ServerApp(server_fn=server_fn)
