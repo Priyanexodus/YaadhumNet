@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mlflow
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: mlflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "mlflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    image: moon-fl-mlflow:latest
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://mlflow:mlflow@postgres:5432/mlflow
+      --default-artifact-root /mlflow/artifacts
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  superlink:
+    image: moon-fl-server:latest
+    ports:
+      - "9091:9091"
+      - "9092:9092" 
+      - "9093:9093"   # ← fix: was 9093
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('localhost', 9091), timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  supernode-0:
+    image: moon-fl-client-cpu:latest
+    depends_on:
+      superlink:
+        condition: service_healthy
+    volumes:
+      - /home/priyan/data/client_0:/data/client_0
+    command: >
+      flower-supernode --insecure --superlink superlink:9092
+      --node-config "data-path='/data/client_0'"
+
+  supernode-1:
+    image: moon-fl-client-cpu:latest
+    depends_on:
+      superlink:
+        condition: service_healthy
+    volumes:
+      - /home/priyan/data/client_1:/data/client_1
+    command: >
+      flower-supernode --insecure --superlink superlink:9092
+      --node-config "data-path='/data/client_1'"
+
+volumes:
+  postgres_data:
+  mlflow_artifacts:
