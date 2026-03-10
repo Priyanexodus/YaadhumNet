@@ -17,7 +17,7 @@ def get_transforms():
 def get_dataloader(
     data_path: str,                     # path to this client's local dataset
     split: str = "train",               # "train" or "val"
-    batch_size: int = 4,
+    batch_size: int = 64,
     val_ratio: float = 0.2,             # 80/20 train-val split
 ) -> DataLoader:
     """
@@ -61,6 +61,6 @@ def get_dataloader(
         batch_size=batch_size,
         shuffle=is_train,       # shuffle train, not val
         drop_last=is_train,     # drop last batch only for train
-        num_workers=2,
+        num_workers=0,
         pin_memory=True,
     )
