@@ -65,6 +65,7 @@ services:
     depends_on:
       superlink:
         condition: service_healthy
+    shm_size: '2gb'
     volumes:
       - /home/priyan/data/PetImages/client0:/data/client_0
     command: >
@@ -76,6 +77,7 @@ services:
     depends_on:
       superlink:
         condition: service_healthy
+    shm_size: '2gb'
     volumes:
       - /home/priyan/data/PetImages/client1:/data/client_1
     command: >

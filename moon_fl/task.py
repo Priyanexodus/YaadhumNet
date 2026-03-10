@@ -61,6 +61,6 @@ def get_dataloader(
         batch_size=batch_size,
         shuffle=is_train,       # shuffle train, not val
         drop_last=is_train,     # drop last batch only for train
-        num_workers=0,
+        num_workers=0,          #  temp set fo
         pin_memory=True,
     )
