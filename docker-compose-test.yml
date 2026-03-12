@@ -10,6 +10,8 @@ services:
       POSTGRES_PASSWORD: mlflow
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+    - "5432:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "mlflow"]
       interval: 10s
