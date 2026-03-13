@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y curl \
     && curl -Ls https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.local/bin:$PATH"
-ENV UV_PYTHON_PREFERENCE=only-system
 
 COPY .python-version pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --extra client --no-cache
