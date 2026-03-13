@@ -75,7 +75,10 @@ integration-test: test-wire stack-up wait-all test-health test-mlflow test-infra
 	@echo "[done] Integration tests passed"
 	$(MAKE) stack-down
 
-test-all: test-unit integration-test run-federation
+test-e2e:
+	$(PYTEST) tests/e2e/test_full_federation.py
+
+test-all: test-unit integration-test run-federation test-e2e
 	@echo "[done] Full test suite passed"
 
 clean:
