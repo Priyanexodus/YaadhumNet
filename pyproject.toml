@@ -52,3 +52,16 @@ clientapp = "moon_fl.client_app:app"
 [tool.flwr.federations.local-deployment]
 address = "127.0.0.1:9093"
 insecure = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short"
+markers   = [
+    "unit: single component, no Docker, no Flower",
+    "integration: component wiring or service checks, no federation run",
+    "e2e: requires docker stack and full federation run",
+]
+
+[tool.flwr.federations.ec2-deployment]
+address = "35.154.95.231:9093"
+insecure = true

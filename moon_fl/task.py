@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, random_split
 # ── Transforms ──────────────────────────────────────────────────
 def get_transforms():
     return T.Compose([
-        T.Resize((224, 224)),                 # fix: force exact square for ViT
+        T.Resize((32, 32)),                 # fix: force exact square for ViT
         T.ToTensor(),
         T.Normalize((0.485, 0.456, 0.406),
                     (0.229, 0.224, 0.225))

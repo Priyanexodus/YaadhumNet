@@ -1,6 +1,6 @@
 from flwr.client import ClientApp, NumPyClient
 from flwr.common import Context
-from moon_fl.model import MOONModel, ViTEncoder, MOON_contrastive_loss  # fix: src.model → moon_fl.model
+from moon_fl.model import MOONModel, CNNEncoder, MOON_contrastive_loss  # fix: src.model → moon_fl.model
 from moon_fl.task import get_dataloader
 import torch, copy
 import torch.nn.functional as F
@@ -108,7 +108,7 @@ def client_fn(context: Context):
     
     num_classes = len(train_loader.dataset.dataset.classes)  # ImageFolder.classes
 
-    model = MOONModel(ViTEncoder(), proj_dim=256, num_classes=num_classes).to(device)  # ← dynamic
+    model = MOONModel(CNNEncoder(), proj_dim=256, num_classes=num_classes).to(device)  # ← dynamic
 
     return MOONClient(
         model=model,
