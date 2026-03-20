@@ -14,7 +14,7 @@ import requests
 import pytest
 import grpc
 
-
+pytestmark = pytest.mark.integration
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 SUPERLINK_HOST      = "localhost"

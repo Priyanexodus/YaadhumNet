@@ -12,6 +12,8 @@ Run:
 import pytest
 import mlflow
 
+pytestmark = pytest.mark.integration
+
 MLFLOW_URI      = "http://localhost:5000"
 EXPERIMENT_NAME = "test-integration-probe"
 

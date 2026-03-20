@@ -28,6 +28,7 @@ from flwr.common import Parameters, FitRes, ndarrays_to_parameters
 from flwr.server import ServerAppComponents
 from flwr.server.client_proxy import ClientProxy
 
+pytestmark = pytest.mark.integration
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 

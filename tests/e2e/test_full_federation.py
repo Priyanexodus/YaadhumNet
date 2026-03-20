@@ -23,6 +23,8 @@ import mlflow
 
 from moon_fl.server_app import NUM_ROUNDS
 
+pytestmark = pytest.mark.e2e
+
 MLFLOW_URI      = "http://localhost:5000"
 EXPERIMENT_NAME = "MOON-FL-Production"
 POLL_INTERVAL   = 15    # seconds between MLflow polls

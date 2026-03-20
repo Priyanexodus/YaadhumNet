@@ -2,6 +2,8 @@ import numpy as np
 import pytest, torch
 from moon_fl.model import MOONModel, ViTEncoder, MOON_contrastive_loss
 
+pytestmark = pytest.mark.unit
+
 def test_vit_encoder_output_shape():
     enc = ViTEncoder('deit_tiny_patch16_224', pretrained=False)
     model = MOONModel(enc, proj_dim=256, num_classes=10)
