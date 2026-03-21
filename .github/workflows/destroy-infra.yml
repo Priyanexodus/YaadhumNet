@@ -1,0 +1,159 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm infrastructure teardown'
+        required: true
+        default: ''
+
+env:
+  AWS_REGION:     ap-south-1
+  TF_WORKING_DIR: infra/live
+  TF_VERSION:     1.7.0
+
+jobs:
+  ###############################################################################
+  # Job 1 — Plan Destroy
+  ###############################################################################
+  plan-destroy:
+    name: Terraform Plan Destroy
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.confirm == 'destroy' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      ###########################################################################
+      # Remove S3 bucket from state before plan
+      # Protects state bucket from accidental deletion
+      ###########################################################################
+      - name: Remove S3 bucket from state
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_db_password:   ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_key_pair_name: ${{ secrets.TF_VAR_KEY_PAIR_NAME }}
+          TF_VAR_my_ip_cidr:    ${{ secrets.TF_VAR_MY_IP_CIDR }}
+        run: |
+          terraform state rm aws_s3_bucket.fl_checkpoints || true
+          terraform state rm aws_s3_bucket_lifecycle_configuration.fl_checkpoints || true
+
+      - name: Terraform Plan Destroy
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_db_password:   ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_key_pair_name: ${{ secrets.TF_VAR_KEY_PAIR_NAME }}
+          TF_VAR_my_ip_cidr:    ${{ secrets.TF_VAR_MY_IP_CIDR }}
+        run: |
+          terraform plan -destroy -out=tfplan-destroy 2>&1 | tee plan_output.txt
+
+      - name: Upload destroy plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-destroy
+          path: |
+            ${{ env.TF_WORKING_DIR }}/tfplan-destroy
+            ${{ env.TF_WORKING_DIR }}/plan_output.txt
+          retention-days: 1
+
+      - name: Post plan summary
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "### ⚠️ Terraform Destroy Plan" >> $GITHUB_STEP_SUMMARY
+          echo "**The following resources will be DESTROYED:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat plan_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> S3 bucket \`moon-fl-checkpoints\` is protected — removed from state before destroy." >> $GITHUB_STEP_SUMMARY
+
+  ###############################################################################
+  # Job 2 — Manual Approval
+  ###############################################################################
+  approve:
+    name: Manual Approval
+    runs-on: ubuntu-latest
+    needs: plan-destroy
+    environment: production
+
+    steps:
+      - name: Awaiting approval
+        run: echo "Destroy plan approved — proceeding with teardown"
+
+  ###############################################################################
+  # Job 3 — Destroy
+  ###############################################################################
+  destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    needs: approve
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Remove S3 bucket from state
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_db_password:   ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_key_pair_name: ${{ secrets.TF_VAR_KEY_PAIR_NAME }}
+          TF_VAR_my_ip_cidr:    ${{ secrets.TF_VAR_MY_IP_CIDR }}
+        run: |
+          terraform state rm aws_s3_bucket.fl_checkpoints || true
+          terraform state rm aws_s3_bucket_lifecycle_configuration.fl_checkpoints || true
+
+      - name: Download destroy plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-destroy
+          path: ${{ env.TF_WORKING_DIR }}
+
+      - name: Terraform Destroy
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_db_password:   ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_key_pair_name: ${{ secrets.TF_VAR_KEY_PAIR_NAME }}
+          TF_VAR_my_ip_cidr:    ${{ secrets.TF_VAR_MY_IP_CIDR }}
+        run: terraform apply -auto-approve tfplan-destroy
+
+      - name: Post destroy summary
+        run: |
+          echo "### ✅ Infrastructure Destroyed" >> $GITHUB_STEP_SUMMARY
+          echo "All managed resources have been destroyed." >> $GITHUB_STEP_SUMMARY
+          echo "S3 bucket \`moon-fl-checkpoints\` was preserved." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To redeploy: run the **Deploy Infrastructure** workflow." >> $GITHUB_STEP_SUMMARY
