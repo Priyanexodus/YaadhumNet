@@ -99,3 +99,25 @@ resource "aws_iam_instance_profile" "fl_server_profile" {
   name = "moon-fl-server-profile"
   role = aws_iam_role.fl_server_role.name
 }
+
+resource "aws_iam_role_policy" "secrets_access" {
+  name = "moon-fl-secrets-access"
+  role = aws_iam_role.fl_server_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "secretsmanager:GetSecretValue"
+      ]
+      Resource = [
+        aws_secretsmanager_secret.ca_key.arn,
+        aws_secretsmanager_secret.ca_crt.arn,
+        aws_secretsmanager_secret.server_key.arn,
+        aws_secretsmanager_secret.server_crt.arn,
+        aws_secretsmanager_secret.db_password.arn,
+      ]
+    }]
+  })
+}

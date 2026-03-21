@@ -35,14 +35,41 @@ unzip -q /tmp/awscliv2.zip -d /tmp
 rm -rf /tmp/awscliv2.zip /tmp/aws
 
 ###############################################################################
-# 3. Write .env
-#    Terraform substitutes ${db_user}, ${db_password} etc. at render time.
-#    chmod 600 — only root can read this file.
-#    Secrets never appear in docker-compose.prod.yml.
+# 3. Fetch secrets from AWS Secrets Manager
+###############################################################################
+AWS_CLI=/usr/local/bin/aws
+REGION=${aws_region}
+
+fetch_secret() {
+  $AWS_CLI secretsmanager get-secret-value \
+    --region "$REGION" \
+    --secret-id "$1" \
+    --query SecretString \
+    --output text
+}
+
+# TLS certificates
+mkdir -p /home/ubuntu/certs
+chmod 700 /home/ubuntu/certs
+
+fetch_secret "moon-fl/certs/ca-crt"     > /home/ubuntu/certs/ca.crt
+fetch_secret "moon-fl/certs/server-crt" > /home/ubuntu/certs/server.crt
+fetch_secret "moon-fl/certs/server-key" > /home/ubuntu/certs/server.key
+
+chmod 644 /home/ubuntu/certs/ca.crt
+chmod 644 /home/ubuntu/certs/server.crt
+chmod 600 /home/ubuntu/certs/server.key
+chown -R root:root /home/ubuntu/certs
+
+# Database password
+DB_PASSWORD=$(fetch_secret "moon-fl/db/password")
+
+###############################################################################
+# 4. Write .env
 ###############################################################################
 cat > /home/ubuntu/.env << ENVEOF
 DB_USER=${db_user}
-DB_PASSWORD=${db_password}
+DB_PASSWORD=$DB_PASSWORD
 DB_ENDPOINT=${db_endpoint}
 DB_NAME=${db_name}
 S3_BUCKET_NAME=${s3_bucket}
@@ -52,6 +79,10 @@ ENVEOF
 chmod 600 /home/ubuntu/.env
 chown root:root /home/ubuntu/.env
 
+###############################################################################
+# 5. Write docker-compose.prod.yml
+#    superlink — no command override, entrypoint.sh handles TLS flags
+###############################################################################
 cat > /home/ubuntu/docker-compose.prod.yml << 'COMPOSEEOF'
 services:
   mlflow:
@@ -84,6 +115,8 @@ services:
       - "9091:9091"
       - "9092:9092"
       - "9093:9093"
+    volumes:
+      - /home/ubuntu/certs:/certs:ro
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:5000
     depends_on:
@@ -97,13 +130,13 @@ services:
     restart: unless-stopped
 COMPOSEEOF
 
-# Substitute all placeholders with actual values
+# Substitute all placeholders
 sed -i \
   -e "s|__ECR_REGISTRY__|${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com|g" \
   -e "s|__ECR_TAG__|${ecr_image_tag}|g" \
   -e "s|__AWS_REGION__|${aws_region}|g" \
   -e "s|__DB_USER__|${db_user}|g" \
-  -e "s|__DB_PASSWORD__|${db_password}|g" \
+  -e "s|__DB_PASSWORD__|$DB_PASSWORD|g" \
   -e "s|__DB_ENDPOINT__|${db_endpoint}|g" \
   -e "s|__DB_NAME__|${db_name}|g" \
   -e "s|__S3_BUCKET__|${s3_bucket}|g" \
@@ -112,7 +145,7 @@ sed -i \
 chown ubuntu:ubuntu /home/ubuntu/docker-compose.prod.yml
 
 ###############################################################################
-# 5. ECR login + pull images
+# 6. ECR login + pull images
 ###############################################################################
 ECR_REGISTRY="${aws_account_id}.dkr.ecr.${aws_region}.amazonaws.com"
 
@@ -123,7 +156,7 @@ docker pull "$ECR_REGISTRY/moon-fl-server:${ecr_image_tag}"
 docker pull "$ECR_REGISTRY/moon-fl-mlflow:${ecr_image_tag}"
 
 ###############################################################################
-# 6. Start services
+# 7. Start services
 ###############################################################################
 cd /home/ubuntu
 docker compose -f /home/ubuntu/docker-compose.prod.yml up -d
