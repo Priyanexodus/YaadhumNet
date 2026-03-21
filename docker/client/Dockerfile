@@ -23,6 +23,7 @@ RUN chmod +x /app/entrypoint.sh
 
 ENV PATH="/app/.venv/bin:$PATH"
 
+
 # Required at runtime — no defaults
 ENV SUPERLINK_URL=""
 ENV DATA_PATH=""
