@@ -19,4 +19,4 @@ echo "Starting SuperLink with TLS..."
 exec flower-superlink \
   --ssl-certfile  /certs/server.crt \
   --ssl-keyfile   /certs/server.key \
-  --ca-certificate /certs/ca.crt
+  --ssl-ca-certfile /certs/ca.crt    # ← was --ca-certificate
