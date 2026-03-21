@@ -1,0 +1,96 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile.*'
+      - 'moon_fl/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+env:
+  AWS_REGION:    ap-south-1
+  AWS_ACCOUNT_ID: 097155545354
+  ECR_REGISTRY:  097155545354.dkr.ecr.ap-south-1.amazonaws.com
+
+jobs:
+  build-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+
+    steps:
+      ###########################################################################
+      # 1. Checkout
+      ###########################################################################
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      ###########################################################################
+      # 2. AWS credentials
+      ###########################################################################
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      ###########################################################################
+      # 3. ECR login
+      ###########################################################################
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      ###########################################################################
+      # 4. Build + push moon-fl-server
+      ###########################################################################
+      - name: Build and push moon-fl-server
+        uses: docker/build-push-action@v5
+        with:
+          context:   .
+          file:      Dockerfile.server
+          push:      true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/moon-fl-server:latest
+            ${{ env.ECR_REGISTRY }}/moon-fl-server:${{ github.sha }}
+
+      ###########################################################################
+      # 5. Build + push moon-fl-mlflow
+      ###########################################################################
+      - name: Build and push moon-fl-mlflow
+        uses: docker/build-push-action@v5
+        with:
+          context:   .
+          file:      Dockerfile.mlflow
+          push:      true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/moon-fl-mlflow:latest
+            ${{ env.ECR_REGISTRY }}/moon-fl-mlflow:${{ github.sha }}
+
+      ###########################################################################
+      # 6. Build + push moon-fl-client (CPU)
+      ###########################################################################
+      - name: Build and push moon-fl-client
+        uses: docker/build-push-action@v5
+        with:
+          context:   .
+          file:      Dockerfile.client.cpu
+          push:      true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/moon-fl-client:latest
+            ${{ env.ECR_REGISTRY }}/moon-fl-client:${{ github.sha }}
+
+      ###########################################################################
+      # 7. Summary
+      ###########################################################################
+      - name: Print image tags
+        run: |
+          echo "### Images pushed" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tags |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| moon-fl-server  | \`latest\`, \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| moon-fl-mlflow  | \`latest\`, \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| moon-fl-client  | \`latest\`, \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
