@@ -11,9 +11,9 @@ on:
       - 'uv.lock'
 
 env:
-  AWS_REGION:    ap-south-1
+  AWS_REGION:     ap-south-1
   AWS_ACCOUNT_ID: 097155545354
-  ECR_REGISTRY:  097155545354.dkr.ecr.ap-south-1.amazonaws.com
+  ECR_REGISTRY:   097155545354.dkr.ecr.ap-south-1.amazonaws.com
 
 jobs:
   build-push:
@@ -28,7 +28,13 @@ jobs:
         uses: actions/checkout@v4
 
       ###########################################################################
-      # 2. AWS credentials
+      # 2. Docker Buildx — required for cache-from/cache-to with gha backend
+      ###########################################################################
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      ###########################################################################
+      # 3. AWS credentials
       ###########################################################################
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -38,14 +44,14 @@ jobs:
           aws-region:            ${{ env.AWS_REGION }}
 
       ###########################################################################
-      # 3. ECR login
+      # 4. ECR login
       ###########################################################################
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       ###########################################################################
-      # 4. Build + push moon-fl-server
+      # 5. Build + push moon-fl-server
       ###########################################################################
       - name: Build and push moon-fl-server
         uses: docker/build-push-action@v5
@@ -56,9 +62,11 @@ jobs:
           tags: |
             ${{ env.ECR_REGISTRY }}/moon-fl-server:latest
             ${{ env.ECR_REGISTRY }}/moon-fl-server:${{ github.sha }}
+          cache-from: type=gha,scope=moon-fl-server
+          cache-to:   type=gha,scope=moon-fl-server,mode=max
 
       ###########################################################################
-      # 5. Build + push moon-fl-mlflow
+      # 6. Build + push moon-fl-mlflow
       ###########################################################################
       - name: Build and push moon-fl-mlflow
         uses: docker/build-push-action@v5
@@ -69,9 +77,11 @@ jobs:
           tags: |
             ${{ env.ECR_REGISTRY }}/moon-fl-mlflow:latest
             ${{ env.ECR_REGISTRY }}/moon-fl-mlflow:${{ github.sha }}
+          cache-from: type=gha,scope=moon-fl-mlflow
+          cache-to:   type=gha,scope=moon-fl-mlflow,mode=max
 
       ###########################################################################
-      # 6. Build + push moon-fl-client (CPU)
+      # 7. Build + push moon-fl-client (CPU)
       ###########################################################################
       - name: Build and push moon-fl-client
         uses: docker/build-push-action@v5
@@ -82,9 +92,11 @@ jobs:
           tags: |
             ${{ env.ECR_REGISTRY }}/moon-fl-client:latest
             ${{ env.ECR_REGISTRY }}/moon-fl-client:${{ github.sha }}
+          cache-from: type=gha,scope=moon-fl-client
+          cache-to:   type=gha,scope=moon-fl-client,mode=max
 
       ###########################################################################
-      # 7. Summary
+      # 8. Summary
       ###########################################################################
       - name: Print image tags
         run: |
