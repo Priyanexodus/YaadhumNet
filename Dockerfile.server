@@ -8,7 +8,6 @@ RUN uv sync --frozen --no-install-project --extra server --no-cache
 COPY moon_fl/ ./moon_fl/
 RUN uv sync --frozen --extra server --no-cache
 
-
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 9091 9092
