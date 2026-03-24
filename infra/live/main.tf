@@ -2,8 +2,9 @@ terraform {
   required_version = ">= 1.7"
 
   required_providers {
-    aws = { source = "hashicorp/aws", version = "~> 5.0" }
-  }
+  aws = { source = "hashicorp/aws", version = "~> 5.0" }
+  tls = { source = "hashicorp/tls", version = "~> 4.0" }  
+}
 
   # Backend bucket created by infra/bootstrap — must exist before `terraform init` here
   backend "s3" {
