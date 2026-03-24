@@ -53,6 +53,10 @@ clientapp = "moon_fl.client_app:app"
 address = "127.0.0.1:9093"
 insecure = true
 
-[tool.flwr.federations.ec2-deployment]
-address = "35.154.95.231:9093" #change this at the time of execution.
-insecure = true
+[tool.flwr.federations]
+default = "moon-fl"
+
+[tool.flwr.federations.moon-fl]
+address = "3.109.106.224:9093"
+insecure = false
+root-certificates = "docker/client/ca.crt"
