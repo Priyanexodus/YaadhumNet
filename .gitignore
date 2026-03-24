@@ -210,3 +210,4 @@ moon-fl-keypair.pem
 aws.md
 terraform.tfvars
 .terraform/
+ca.crt
