@@ -43,10 +43,11 @@ jobs:
         run: terraform init
 
       ###########################################################################
-      # Remove S3 bucket from state before plan
-      # Protects state bucket from accidental deletion
+      # Strip the import block from s3.tf so plan-destroy doesn't re-import
+      # the bucket after state rm. The import block stays in the committed file
+      # and is only removed from the working copy at runtime.
       ###########################################################################
-      - name: Remove S3 bucket from state
+      - name: Remove S3 bucket from state and strip import block
         working-directory: ${{ env.TF_WORKING_DIR }}
         env:
           TF_VAR_db_password:   ${{ secrets.TF_VAR_DB_PASSWORD }}
@@ -55,6 +56,10 @@ jobs:
         run: |
           terraform state rm aws_s3_bucket.fl_checkpoints || true
           terraform state rm aws_s3_bucket_lifecycle_configuration.fl_checkpoints || true
+          sed -i '/^import {/,/^}/d' s3.tf
+          echo "[ok] Import block stripped from s3.tf"
+          echo "[ok] s3.tf after edit:"
+          cat s3.tf
 
       - name: Terraform Plan Destroy
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -83,7 +88,7 @@ jobs:
           cat plan_output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> S3 bucket \`moon-fl-checkpoints\` is protected — removed from state before destroy." >> $GITHUB_STEP_SUMMARY
+          echo "> S3 bucket \`moon-fl-checkpoints\` is protected — import block stripped and removed from state before destroy." >> $GITHUB_STEP_SUMMARY
 
   ###############################################################################
   # Job 2 — Manual Approval
@@ -126,7 +131,11 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
 
-      - name: Remove S3 bucket from state
+      ###########################################################################
+      # Repeat in the apply job — each job gets a fresh checkout so the sed
+      # from plan-destroy is gone. Must strip again before apply.
+      ###########################################################################
+      - name: Remove S3 bucket from state and strip import block
         working-directory: ${{ env.TF_WORKING_DIR }}
         env:
           TF_VAR_db_password:   ${{ secrets.TF_VAR_DB_PASSWORD }}
@@ -135,6 +144,8 @@ jobs:
         run: |
           terraform state rm aws_s3_bucket.fl_checkpoints || true
           terraform state rm aws_s3_bucket_lifecycle_configuration.fl_checkpoints || true
+          sed -i '/^import {/,/^}/d' s3.tf
+          echo "[ok] Import block stripped from s3.tf"
 
       - name: Download destroy plan
         uses: actions/download-artifact@v4
@@ -154,6 +165,6 @@ jobs:
         run: |
           echo "### ✅ Infrastructure Destroyed" >> $GITHUB_STEP_SUMMARY
           echo "All managed resources have been destroyed." >> $GITHUB_STEP_SUMMARY
-          echo "S3 bucket \`moon-fl-checkpoints\` was preserved." >> $GITHUB_STEP_SUMMARY
+          echo "S3 bucket \`moon-fl-checkpoints\` was preserved — import block is intact in s3.tf for next deploy." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "To redeploy: run the **Deploy Infrastructure** workflow." >> $GITHUB_STEP_SUMMARY
