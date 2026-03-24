@@ -14,8 +14,18 @@ RUN uv sync --frozen --no-install-project --extra client --no-cache
 COPY moon_fl/ ./moon_fl/
 RUN uv sync --frozen --extra client --no-cache
 
-ENV PATH="/app/.venv/bin:$PATH"
-ENV SUPERLINK_URL=localhost:9091
-ENV DATA_PATH=./data
+# Bake CA certificate — SuperNode uses this to verify SuperLink TLS cert
+COPY certs/ca.crt /app/certs/ca.crt
 
-CMD ["sh", "-c", "flower-supernode --insecure --superlink $SUPERLINK_URL --node-config 'data-path=\"$DATA_PATH\"'"]
+# Entrypoint — validates env vars and starts SuperNode
+COPY docker/client/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+
+# Required at runtime — no defaults
+ENV SUPERLINK_URL=""
+ENV DATA_PATH=""
+
+ENTRYPOINT ["/app/entrypoint.sh"]

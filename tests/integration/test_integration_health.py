@@ -2,6 +2,8 @@ import requests
 import psycopg2
 import pytest
 
+pytestmark = pytest.mark.integration
+
 def test_mlflow_reachable():
     resp = requests.get("http://localhost:5000/health")
     assert resp.status_code == 200
