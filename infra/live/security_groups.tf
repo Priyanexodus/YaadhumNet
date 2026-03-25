@@ -49,7 +49,7 @@ resource "aws_security_group" "fl_server_sg" {
   }
 
   ingress {
-    description     = "node_exporter — Prometheus scrape from monitoring EC2 only"
+    description     = "node_exporter - Prometheus scrape from monitoring EC2 only"
     from_port       = 9100
     to_port         = 9100
     protocol        = "tcp"
@@ -99,14 +99,10 @@ resource "aws_security_group" "rds_sg" {
   }
 }
 
-###############################################################################
-# Monitoring Security Group - Prometheus + Grafana
-###############################################################################
-
 resource "aws_security_group" "monitoring_sg" {
   name        = "moon-fl-monitoring-sg"
   description = "MOON FL monitoring - Prometheus + Grafana"
-
+  
   ingress {
     description = "SSH"
     from_port   = 22
