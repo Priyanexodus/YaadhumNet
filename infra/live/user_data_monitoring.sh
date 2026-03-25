@@ -141,7 +141,7 @@ services:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_SECURITY_ADMIN_PASSWORD=$${GRAFANA_PASSWORD}
       - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource
     ports:
       - "3000:3000"
