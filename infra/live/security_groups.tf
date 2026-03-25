@@ -100,7 +100,7 @@ resource "aws_security_group" "rds_sg" {
 }
 
 ###############################################################################
-# Monitoring Security Group — Prometheus + Grafana
+# Monitoring Security Group - Prometheus + Grafana
 ###############################################################################
 
 resource "aws_security_group" "monitoring_sg" {
