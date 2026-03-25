@@ -105,7 +105,7 @@ resource "aws_security_group" "rds_sg" {
 
 resource "aws_security_group" "monitoring_sg" {
   name        = "moon-fl-monitoring-sg"
-  description = "MOON FL monitoring — Prometheus + Grafana"
+  description = "MOON FL monitoring - Prometheus + Grafana"
 
   ingress {
     description = "SSH"
