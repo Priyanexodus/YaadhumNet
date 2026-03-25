@@ -51,3 +51,13 @@ variable "ecr_image_tag" {
   description = "Docker image tag to pull on EC2 bootstrap"
   default     = "latest"
 }
+
+variable "grafana_password" {
+  description = "Grafana admin password"
+  sensitive   = true
+}
+
+variable "monitoring_instance_type" {
+  description = "EC2 instance type for Prometheus + Grafana (t3.micro sufficient for this stack)"
+  default     = "t3.micro"
+}

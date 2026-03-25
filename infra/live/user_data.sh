@@ -128,6 +128,20 @@ services:
         awslogs-region: __AWS_REGION__
         awslogs-stream: superlink
     restart: unless-stopped
+  
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
 COMPOSEEOF
 
 # Substitute all placeholders

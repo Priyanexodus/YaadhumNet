@@ -48,6 +48,14 @@ resource "aws_security_group" "fl_server_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description     = "node_exporter — Prometheus scrape from monitoring EC2 only"
+    from_port       = 9100
+    to_port         = 9100
+    protocol        = "tcp"
+    security_groups = [aws_security_group.monitoring_sg.id]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -87,6 +95,51 @@ resource "aws_security_group" "rds_sg" {
 
   tags = {
     Name    = "moon-fl-rds-sg"
+    Project = "MOON-FL"
+  }
+}
+
+###############################################################################
+# Monitoring Security Group — Prometheus + Grafana
+###############################################################################
+
+resource "aws_security_group" "monitoring_sg" {
+  name        = "moon-fl-monitoring-sg"
+  description = "MOON FL monitoring — Prometheus + Grafana"
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Grafana UI"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Prometheus UI"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name    = "moon-fl-monitoring-sg"
     Project = "MOON-FL"
   }
 }
