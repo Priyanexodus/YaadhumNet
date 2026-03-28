@@ -41,6 +41,11 @@ global:
 
 scrape_configs:
 
+  - job_name: 'prometheus'
+
+    scrape_interval: 5m
+    scrape_timeout: 1m
+
   # System metrics — CPU, memory, disk, network
   - job_name: 'node_exporter'
     static_configs:
