@@ -50,11 +50,11 @@ resource "aws_security_group" "fl_server_sg" {
   }
 
   ingress {
-    description     = "node_exporter - Prometheus scrape from monitoring EC2 only"
-    from_port       = 9100
-    to_port         = 9100
-    protocol        = "tcp"
-    security_groups = [aws_security_group.monitoring_sg.id]
+  description = "node_exporter - Prometheus scrape from monitoring EC2 only"
+  from_port   = 9100
+  to_port     = 9100
+  protocol    = "tcp"
+  cidr_blocks = ["${aws_eip.monitoring_ip.public_ip}/32"]
   }
 
   egress {

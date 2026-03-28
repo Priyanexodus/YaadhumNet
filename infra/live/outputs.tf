@@ -3,6 +3,11 @@ output "fl_server_public_ip" {
   description = "SuperLink IP — Fleet API: <ip>:9092 / Exec API: <ip>:9091"
 }
 
+output "monitoring_ip" {
+  value       = aws_eip.monitoring_ip.public_ip
+  description = "Monitoring EC2 public IP"
+}
+
 output "mlflow_url" {
   value       = "http://${aws_eip.fl_server_ip.public_ip}:5000"
   description = "MLflow tracking UI"
@@ -27,4 +32,14 @@ output "ecr_mlflow_url" {
 
 output "s3_bucket" {
   value = aws_s3_bucket.fl_checkpoints.bucket
+}
+
+output "grafana_url" {
+  value       = "http://${aws_eip.monitoring_ip.public_ip}:3000"
+  description = "Grafana UI"
+}
+
+output "prometheus_url" {
+  value       = "http://${aws_eip.monitoring_ip.public_ip}:9090"
+  description = "Prometheus UI"
 }
