@@ -1,0 +1,40 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  blackbox:
+    image: prom/blackbox-exporter:v0.25.0
+    volumes:
+      - ./blackbox.yml:/config/blackbox.yml:ro
+    command:
+      - '--config.file=/config/blackbox.yml'
+    ports:
+      - "9115:9115"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

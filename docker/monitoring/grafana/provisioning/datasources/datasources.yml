@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+  - name: MLflow
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    url: http://<FL_SERVER_IP>:5000
+    editable: true
+    jsonData:
+      tlsSkipVerify: true

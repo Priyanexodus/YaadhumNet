@@ -7,6 +7,7 @@
 resource "aws_security_group" "fl_server_sg" {
   name        = "moon-fl-server-sg"
   description = "MOON FL SuperLink security group"
+  vpc_id      = aws_vpc.moon_fl.id
 
   ingress {
     description = "SSH"
@@ -48,6 +49,14 @@ resource "aws_security_group" "fl_server_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+  description = "node_exporter - Prometheus scrape from monitoring EC2 only"
+  from_port   = 9100
+  to_port     = 9100
+  protocol    = "tcp"
+  cidr_blocks = ["${aws_eip.monitoring_ip.public_ip}/32"]
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -69,6 +78,7 @@ resource "aws_security_group" "fl_server_sg" {
 resource "aws_security_group" "rds_sg" {
   name        = "moon-fl-rds-sg"
   description = "Allow PostgreSQL access from FL server only"
+  vpc_id      = aws_vpc.moon_fl.id
 
   ingress {
     description     = "PostgreSQL from FL server"
@@ -87,6 +97,48 @@ resource "aws_security_group" "rds_sg" {
 
   tags = {
     Name    = "moon-fl-rds-sg"
+    Project = "MOON-FL"
+  }
+}
+
+resource "aws_security_group" "monitoring_sg" {
+  name        = "moon-fl-monitoring-sg"
+  description = "MOON FL monitoring - Prometheus + Grafana"
+  vpc_id      = aws_vpc.moon_fl.id
+  
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Grafana UI"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Prometheus UI"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name    = "moon-fl-monitoring-sg"
     Project = "MOON-FL"
   }
 }

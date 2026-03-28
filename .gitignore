@@ -211,3 +211,4 @@ aws.md
 terraform.tfvars
 .terraform/
 ca.crt
+*.tfstate

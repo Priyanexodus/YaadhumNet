@@ -41,11 +41,26 @@ AWS_CLI=/usr/local/bin/aws
 REGION=${aws_region}
 
 fetch_secret() {
-  $AWS_CLI secretsmanager get-secret-value \
-    --region "$REGION" \
-    --secret-id "$1" \
-    --query SecretString \
-    --output text
+  local secret_id="$1"
+  local elapsed=0
+
+  while true; do
+    local value
+    value=$($AWS_CLI secretsmanager get-secret-value \
+      --region "$REGION" \
+      --secret-id "$secret_id" \
+      --query SecretString \
+      --output text 2>&1) && echo "$value" && return 0
+
+    elapsed=$((elapsed + 15))
+    if [ $elapsed -ge 600 ]; then
+      echo "[error] Timeout waiting for: $secret_id"
+      exit 1
+    fi
+
+    echo "[secrets] IAM not ready, retrying in 15s... ($elapsed s elapsed)"
+    sleep 15
+  done
 }
 
 # TLS certificates
@@ -127,6 +142,20 @@ services:
         awslogs-group: /moon-fl/superlink
         awslogs-region: __AWS_REGION__
         awslogs-stream: superlink
+    restart: unless-stopped
+  
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     restart: unless-stopped
 COMPOSEEOF
 
