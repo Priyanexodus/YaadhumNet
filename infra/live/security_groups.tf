@@ -7,6 +7,7 @@
 resource "aws_security_group" "fl_server_sg" {
   name        = "moon-fl-server-sg"
   description = "MOON FL SuperLink security group"
+  vpc_id      = aws_vpc.moon_fl.id
 
   ingress {
     description = "SSH"
@@ -77,6 +78,7 @@ resource "aws_security_group" "fl_server_sg" {
 resource "aws_security_group" "rds_sg" {
   name        = "moon-fl-rds-sg"
   description = "Allow PostgreSQL access from FL server only"
+  vpc_id      = aws_vpc.moon_fl.id
 
   ingress {
     description     = "PostgreSQL from FL server"
@@ -102,6 +104,7 @@ resource "aws_security_group" "rds_sg" {
 resource "aws_security_group" "monitoring_sg" {
   name        = "moon-fl-monitoring-sg"
   description = "MOON FL monitoring - Prometheus + Grafana"
+  vpc_id      = aws_vpc.moon_fl.id
   
   ingress {
     description = "SSH"

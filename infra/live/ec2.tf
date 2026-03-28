@@ -2,6 +2,7 @@ resource "aws_instance" "fl_server" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
   key_name               = var.key_pair_name
+  subnet_id              = aws_subnet.public_a.id 
   iam_instance_profile   = aws_iam_instance_profile.fl_server_profile.name
   vpc_security_group_ids = [aws_security_group.fl_server_sg.id]
 

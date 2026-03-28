@@ -17,6 +17,7 @@ resource "aws_db_instance" "mlflow_db" {
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
   multi_az            = false
+  db_subnet_group_name   = aws_db_subnet_group.mlflow.name 
   publicly_accessible = false
   storage_encrypted   = true
   skip_final_snapshot = true

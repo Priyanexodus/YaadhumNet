@@ -61,3 +61,18 @@ variable "monitoring_instance_type" {
   description = "EC2 instance type for Prometheus + Grafana (t3.micro sufficient for this stack)"
   default     = "t3.micro"
 }
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block"
+  default     = "10.0.0.0/16"
+}
+
+variable "public_subnet_a_cidr" {
+  description = "Public subnet in AZ-a"
+  default     = "10.0.1.0/24"
+}
+
+variable "public_subnet_b_cidr" {
+  description = "Public subnet in AZ-b (required for RDS subnet group)"
+  default     = "10.0.2.0/24"
+}

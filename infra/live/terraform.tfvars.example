@@ -13,3 +13,7 @@ db_user                = "mlflow"
 db_password            = "mlflow_moon_fl_2026"
 
 ecr_image_tag = "latest"
+
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_a_cidr = "10.0.1.0/24"
+public_subnet_b_cidr = "10.0.2.0/24"
