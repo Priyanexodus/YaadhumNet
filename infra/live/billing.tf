@@ -37,6 +37,7 @@ resource "aws_sns_topic_subscription" "billing_email" {
 # AWS Budgets — Monthly Cost Budget with tiered alerts
 ###############################################################################
 
+
 resource "aws_budgets_budget" "monthly_total" {
   name         = "moon-fl-monthly-budget"
   budget_type  = "COST"

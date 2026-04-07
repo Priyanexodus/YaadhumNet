@@ -176,6 +176,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
   tags = { Project = "MOON-FL" }
 }
 
+
 # --- Free Storage Space < 2 GB (10% of 20 GB allocated) ---
 resource "aws_cloudwatch_metric_alarm" "rds_free_storage_low" {
   alarm_name          = "moon-fl-rds-low-storage"
