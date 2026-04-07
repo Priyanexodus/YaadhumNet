@@ -49,14 +49,6 @@ resource "aws_security_group" "fl_server_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-  description = "node_exporter - Prometheus scrape from monitoring EC2 only"
-  from_port   = 9100
-  to_port     = 9100
-  protocol    = "tcp"
-  cidr_blocks = ["${aws_eip.monitoring_ip.public_ip}/32"]
-  }
-
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -80,14 +72,6 @@ resource "aws_security_group" "rds_sg" {
   description = "Allow PostgreSQL access from FL server only"
   vpc_id      = aws_vpc.moon_fl.id
 
-  ingress {
-    description     = "PostgreSQL from FL server"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.fl_server_sg.id]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -101,11 +85,15 @@ resource "aws_security_group" "rds_sg" {
   }
 }
 
+###############################################################################
+# Monitoring Security Group — Prometheus + Grafana
+###############################################################################
+
 resource "aws_security_group" "monitoring_sg" {
   name        = "moon-fl-monitoring-sg"
   description = "MOON FL monitoring - Prometheus + Grafana"
   vpc_id      = aws_vpc.moon_fl.id
-  
+
   ingress {
     description = "SSH"
     from_port   = 22
@@ -141,4 +129,28 @@ resource "aws_security_group" "monitoring_sg" {
     Name    = "moon-fl-monitoring-sg"
     Project = "MOON-FL"
   }
+}
+
+###############################################################################
+# Cross-SG Rules — standalone to avoid dependency cycles
+###############################################################################
+
+resource "aws_security_group_rule" "node_exporter_from_monitoring" {
+  type                     = "ingress"
+  description              = "node_exporter - Prometheus scrape from monitoring EC2 only"
+  from_port                = 9100
+  to_port                  = 9100
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.fl_server_sg.id
+  source_security_group_id = aws_security_group.monitoring_sg.id
+}
+
+resource "aws_security_group_rule" "postgres_from_fl_server" {
+  type                     = "ingress"
+  description              = "PostgreSQL from FL server"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.rds_sg.id
+  source_security_group_id = aws_security_group.fl_server_sg.id
 }
